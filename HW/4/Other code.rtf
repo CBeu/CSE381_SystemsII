@@ -1,0 +1,98 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 /* \
+ * File:   beuerlcd_hw4.cpp\
+ * Author: Craig Beuerlein\
+ *\
+ * Copyright [2019] <Beuerlein>\
+ * \
+ * REFERENCE HW#3\
+ */\
+\
+#include <unistd.h>\
+#include <sys/wait.h>\
+#include <iostream>\
+#include <string>\
+#include <vector>\
+#include <fstream>\
+#include <sstream>\
+#include <iomanip>\
+\
+using namespace std;\
+\
+void myExec(std::vector<string> argList) \{\
+    std::vector<char*> args;\
+    for (size_t i = 0; (i < argList.size()); i++) \{\
+        args.push_back(&argList[i][0]);\
+    \}\
+    args.push_back(nullptr);\
+    execvp(args[0], &args[0]);\
+\}\
+\
+int execFork(std::vector<string> argsList) \{\
+    const int pid = fork();\
+    if (pid == 0) \{\
+        myExec(argsList);\
+    \} else \{\
+        return pid;\
+    \}\
+    return pid;\
+\}\
+\
+void pidCheck(int pid) \{\
+    int code;\
+    waitpid(pid, &code, 0);\
+    std::cout << "Exit code: " << code << std::endl;\
+\}\
+\
+std::vector<string> inputProcessor(string input) \{\
+    std::vector<string> argsList;\
+    std::istringstream dataStream(input);\
+    std::string word;\
+    while (dataStream >> std::quoted(word)) \{\
+        argsList.push_back(word);\
+    \}\
+    if (argsList[0] != "SERIAL" && argsList[0] != "PARALLEL") \{\
+        std::cout << "Running:";\
+    \}\
+\
+    for (size_t i = 0; i < argsList.size(); i++) \{\
+        if (argsList[i] == "SERIAL" && argsList[0] != "PARALLEL") \{\
+            i += 2;\
+        \}\
+        if (argsList[0] != "SERIAL" && argsList[0] != "PARALLEL") \{\
+            std::cout << " " + argsList[i];\
+        \}\
+    \}\
+    if (argsList[0] != "SERIAL" && argsList[0] != "PARALLEL") \{\
+        std::cout << std::endl;\
+    \}\
+    return argsList;\
+\}\
+\
+void process(std::string line) \{\
+    std::vector<string> argsList = inputProcessor(line);\
+    std::vector<int> pidList;\
+    pidCheck(execFork(argsList));\
+\}\
+\
+int main(int argc, char** argv) \{\
+    std::string line;\
+    while (std::cout << "> ", std::getline(std::cin, line)) \{\
+        if (line.length() != 0) \{\
+            if (line.at(0) != '#') \{\
+                if (line == "exit") \{\
+                    break;\
+                \} else \{\
+                    process(line);\
+                \}\
+            \} \
+        \}\
+    \}\
+    return 0;\
+\}}
